@@ -92,14 +92,14 @@ export default function Home() {
   const [active, setActive] = useState('dashboard');
   const [query, setQuery] = useState('');
   const [notice, setNotice] = useState('');
-  const [rows, setRows] = useState(prizes);
+  const [rows, setRows] = useState<Prize[]>([]);
   const [connected, setConnected] = useState(false);
   useEffect(() => {
     fetch('/api/inventory')
       .then((r) => r.json())
       .then((d) => {
-        if (d.connected && d.items?.length) {
-          setRows(d.items);
+        if (d.connected) {
+          setRows(d.items || []);
           setConnected(true);
         }
       })
@@ -176,7 +176,7 @@ export default function Home() {
           <div className="date-pill">2026 年 9 月 10 日</div>
         </header>
         {notice && <div className="toast">✓ {notice}</div>}
-        {active === 'dashboard' && <Dashboard hot={hot} low={low} />}{' '}
+        {active === 'dashboard' && <Dashboard hot={hot} low={low} all={rows} />}{' '}
         {active === 'cabinet' && <VirtualCabinet prizes={rows} />}
         {active === 'incoming' && <IncomingForm prizes={rows} onDone={(m)=>{setNotice(m);setTimeout(()=>setNotice(''),2800)}} />}
         {active === 'shelf' && (
@@ -196,7 +196,7 @@ export default function Home() {
     </main>
   );
 }
-function Dashboard({ hot, low }: { hot: Prize[]; low: Prize[] }) {
+function Dashboard({ hot, low, all }: { hot: Prize[]; low: Prize[]; all: Prize[] }) {
   return (
     <>
       <div className="metrics">
@@ -206,8 +206,8 @@ function Dashboard({ hot, low }: { hot: Prize[]; low: Prize[] }) {
           </span>
           <div>
             <small>啟用品項</small>
-            <strong>6</strong>
-            <em>共 70 件禮物</em>
+            <strong>{all.length}</strong>
+            <em>共 {all.reduce((sum, prize) => sum + prize.stock, 0)} 件禮物</em>
           </div>
         </article>
         <article>
@@ -216,8 +216,8 @@ function Dashboard({ hot, low }: { hot: Prize[]; low: Prize[] }) {
           </span>
           <div>
             <small>本週已上架</small>
-            <strong>34</strong>
-            <em>較上週 +8 件</em>
+            <strong>{all.reduce((sum, prize) => sum + prize.recent, 0)}</strong>
+            <em>依目前試算表資料</em>
           </div>
         </article>
         <article>
@@ -306,7 +306,7 @@ function VirtualCabinet({ prizes }: { prizes: Prize[] }) {
       <section className="virtual-cabinet">
         <div className="cabinet-top">
           <div><p className="eyebrow">LIVE CABINET</p><h2>架上有什麼</h2></div>
-          <span className="cabinet-badge">4 層 · 6 品項</span>
+          <span className="cabinet-badge">4 層 · {prizes.length} 品項</span>
         </div>
         <div className="cabinet-frame">
           {floors.map((floor) => {
